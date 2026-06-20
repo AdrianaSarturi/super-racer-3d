@@ -20,5 +20,11 @@ class GameState:
 
 # ── Jogo ──────────────────────────────────────────────────────────────────────
 # Ajustar conforme necessário ao longo do desenvolvimento
-TEMPO_LIMITE        = 60   # segundos para acabar o jogo
-QUANTIDADE_ESTRELAS = 20   # número de estrelas no cenário
+TEMPO_LIMITE        = 30   # segundos para acabar o jogo
+QUANTIDADE_ESTRELAS = 15   # número de estrelas/moedas no cenário
+
+# ── Mundo ─────────────────────────────────────────────────────────────────────
+ARENA_SIZE           = 20    # tamanho da arena em unidades (quadrada, ±10)
+NUM_ESTRELAS         = QUANTIDADE_ESTRELAS  # alias semântico para as estrelas
+STAR_COLLECT_RADIUS  = 0.9   # raio de coleta das estrelas (unidades)
+VELOCIDADE_JOGADOR   = 4.0   # velocidade do cubo/jogador (unidades/segundo)
