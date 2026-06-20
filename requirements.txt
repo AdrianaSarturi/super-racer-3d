@@ -1,0 +1,4 @@
+# Dependências:
+# Instalar com: pip install -r requirements.txt
+
+raylib>=6.0.0   # biblioteca gráfica principal (janela, desenho, input)
