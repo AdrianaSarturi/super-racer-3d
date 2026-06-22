@@ -10,7 +10,7 @@ class Player:
     Garante o modelo geométrico colorido, rosto com olhos/boca, 
     colisão dinâmica perfeita e rotação para a direção de movimento.
     """
-
+  
     def __init__(self):
         # Posição inicial dos pés do boneco no chão (Y = 0.0)
         self.posicao = rl.Vector3(0.0, 0.0, 0.0)

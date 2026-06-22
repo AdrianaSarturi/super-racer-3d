@@ -34,7 +34,7 @@ _POSICOES_ESTRELAS: list[tuple[float, float]] = [
     ( 7.5,  2.0),   # Leste central livre
     ( 0.0, -2.0),   # Centro-Sul livre
 ]
-
+ 
 
 class GameScreen:
     """

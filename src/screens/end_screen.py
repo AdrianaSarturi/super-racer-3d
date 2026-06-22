@@ -3,7 +3,7 @@
 import pyray as rl
 from config import SCREEN_WIDTH, SCREEN_HEIGHT, GameState
 
-
+ 
 class EndScreen:
     """
     Tela de fim de jogo com exibição de resultados dinâmicos e opções de reinício.
