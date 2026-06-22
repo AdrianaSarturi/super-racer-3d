@@ -7,10 +7,11 @@ from config import (
     SCREEN_WIDTH, SCREEN_HEIGHT, GameState,
     ARENA_SIZE, VELOCIDADE_JOGADOR, TEMPO_LIMITE, QUANTIDADE_ESTRELAS,
 )
-from src.world.palette import JOGADOR, JOGADOR_WIRE, HUD_TEXTO, HUD_ALERTA
+from src.world.palette import HUD_TEXTO, HUD_ALERTA
 from src.world.scenario import Scenario
 from src.world.star import Star
-
+from src.entities.player import Player
+from src.screens.end_screen import EndScreen
 
 # ── Posições das estrelas ─────────────────────────────────────────────────────
 # 10 posições verificadas manualmente para não colidirem com nenhum obstáculo.
@@ -26,6 +27,12 @@ _POSICOES_ESTRELAS: list[tuple[float, float]] = [
     (-7.0,  7.0),   # noroeste — livre (4.1u do cubo -8,3)
     ( 5.5, -2.5),   # leste    — livre (1.6u do cone 4,-3 → gap > STAR_COLLECT_RADIUS)
     (-1.0,  2.5),   # centro-N — livre (2.1u do cano -3,3)
+    # ── 5 Novas Posições Adicionadas para somar 15 ──
+    (-3.0, -3.0),   # Quadrante Sudoeste interno
+    ( 3.0,  3.0),   # Quadrante Nordeste interno
+    (-2.0,  7.5),   # Norte central livre
+    ( 7.5,  2.0),   # Leste central livre
+    ( 0.0, -2.0),   # Centro-Sul livre
 ]
 
 
@@ -38,18 +45,14 @@ class GameScreen:
         - Movimento do jogador (WASD / setas).
         - Renderização do cenário (Scenario) e estrelas (Star).
         - HUD: contador de estrelas + timer regressivo + barra de progresso.
-        - Condição de fim: todas as estrelas coletadas OU tempo esgotado.
+        - Condição de fim: todas as estrelas coletadas OU tempo esgotado com reset.
     """
 
     def __init__(self):
-        self.cubo_posicao = rl.Vector3(0.0, 0.5, 0.0)
         self.tempo        = 0.0
-        self.timer        = float(TEMPO_LIMITE)
 
         # ── Câmera (mantida intacta conforme código original) ─────────────
         self.camera = rl.Camera3D()
-        self.camera.position   = rl.Vector3(0.0, 3.0, 6.0)
-        self.camera.target     = self.cubo_posicao
         self.camera.up         = rl.Vector3(0.0, 1.0, 0.0)
         self.camera.fovy       = 60.0
         self.camera.projection = rl.CAMERA_PERSPECTIVE
@@ -62,15 +65,27 @@ class GameScreen:
 
         # ── Cenário e estrelas ────────────────────────────────────────────
         self.cenario = Scenario()
+        # Flag de controlo para reinicialização interna do estado
+        self.needs_reset = True                                                
+
+    def reset(self):
+        """Reinicia o estado interno do jogo sempre que uma nova partida começa."""
+        self.player = Player()
+        self.timer        = float(TEMPO_LIMITE)
+        self.estrelas_coletadas = 0
         self.estrelas: list[Star] = [
             Star(x, z, fase=i * 0.47)
             for i, (x, z) in enumerate(_POSICOES_ESTRELAS)
         ]
-        self.estrelas_coletadas = 0
+        self.camera.target = self.player.posicao
+        self.needs_reset = False
 
     # ── Update ────────────────────────────────────────────────────────────────
 
-    def update(self, dt: float):
+    def update(self, dt: float):                                                      
+        if self.needs_reset:
+            self.reset()
+
         self.tempo += dt
         self.timer -= dt
 
@@ -90,51 +105,37 @@ class GameScreen:
         sin_v = math.sin(self.angulo_vertical)
         cos_v = math.cos(self.angulo_vertical)
 
-        self.camera.position.x = (self.cubo_posicao.x
+        self.camera.position.x = (self.player.posicao.x
                                    + self.distancia * sin_h * cos_v)
         self.camera.position.y = max(
-            0.3, self.cubo_posicao.y + 1.5 + self.distancia * sin_v)
-        self.camera.position.z = (self.cubo_posicao.z
+            0.3, self.player.posicao.y + 2.0 + self.distancia * sin_v)
+        self.camera.position.z = (self.player.posicao.z
                                    + self.distancia * cos_h * cos_v)
-        self.camera.target = self.cubo_posicao
+        self.camera.target = self.player.posicao
 
         # ── Movimento do jogador — WASD / setas (relativo à câmera) ──────
-        spd = VELOCIDADE_JOGADOR * dt
-
-        if rl.is_key_down(rl.KEY_W) or rl.is_key_down(rl.KEY_UP):
-            self.cubo_posicao.x -= sin_h * spd
-            self.cubo_posicao.z -= cos_h * spd
-
-        if rl.is_key_down(rl.KEY_S) or rl.is_key_down(rl.KEY_DOWN):
-            self.cubo_posicao.x += sin_h * spd
-            self.cubo_posicao.z += cos_h * spd
-
-        if rl.is_key_down(rl.KEY_A) or rl.is_key_down(rl.KEY_LEFT):
-            self.cubo_posicao.x -= cos_h * spd
-            self.cubo_posicao.z += sin_h * spd
-
-        if rl.is_key_down(rl.KEY_D) or rl.is_key_down(rl.KEY_RIGHT):
-            self.cubo_posicao.x += cos_h * spd
-            self.cubo_posicao.z -= sin_h * spd
-
-        # Colisão simples com as paredes da arena
-        half = ARENA_SIZE / 2 - 0.6
-        self.cubo_posicao.x = max(-half, min(half, self.cubo_posicao.x))
-        self.cubo_posicao.z = max(-half, min(half, self.cubo_posicao.z))
-
+        self.player.update(dt, sin_h, cos_h, self.cenario)
+                                            
         # ── Atualizar estrelas ────────────────────────────────────────────
         for estrela in self.estrelas:
-            if estrela.update(dt, self.tempo, self.cubo_posicao):
+            if estrela.update(dt, self.tempo, self.player.posicao):
                 self.estrelas_coletadas += 1
 
-        # ── Condições de fim de jogo ──────────────────────────────────────
+        # ── Condições de fim de jogo (Guardando dados para a EndScreen)───
         if self.estrelas_coletadas >= QUANTIDADE_ESTRELAS or self.timer <= 0:
+            EndScreen.score = self.estrelas_coletadas
+            EndScreen.victory = self.estrelas_coletadas >= QUANTIDADE_ESTRELAS
+            self.needs_reset = True  # Garante reconfiguração na próxima partida
             return GameState.GAME_OVER
 
         if rl.is_key_pressed(rl.KEY_ESCAPE):
+            self.needs_reset = True
             return GameState.START
 
         if rl.is_key_pressed(rl.KEY_ENTER):
+            EndScreen.score = self.estrelas_coletadas
+            EndScreen.victory = self.estrelas_coletadas >= QUANTIDADE_ESTRELAS
+            self.needs_reset = True
             return GameState.GAME_OVER
 
         return None
@@ -142,6 +143,9 @@ class GameScreen:
     # ── Draw ──────────────────────────────────────────────────────────────────
 
     def draw(self):
+        if self.needs_reset:
+            return
+            
         rl.clear_background(rl.Color(10, 8, 20, 255))
 
         rl.begin_mode_3d(self.camera)
@@ -154,8 +158,7 @@ class GameScreen:
             estrela.draw(self.tempo)
 
         # Jogador (cubo verde néon)
-        rl.draw_cube(self.cubo_posicao, 1.0, 1.0, 1.0, JOGADOR)
-        rl.draw_cube_wires(self.cubo_posicao, 1.0, 1.0, 1.0, JOGADOR_WIRE)
+        self.player.draw()
 
         rl.end_mode_3d()
 
