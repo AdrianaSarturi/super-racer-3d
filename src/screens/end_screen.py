@@ -32,11 +32,11 @@ class EndScreen:
         if EndScreen.victory:
             titulo = "VITÓRIA!"
             cor_titulo = rl.GOLD
-            subtitulo = "Incrível! Conseguiste recolher todas as estrelas a tempo!"
+            subtitulo = "Incrivel! Voc\u00ea coletou todas as estrelas a tempo!"
         else:
             titulo = "FIM DE JOGO"
             cor_titulo = rl.RED
-            subtitulo = "O tempo limite esgotou-se!"
+            subtitulo = "O tempo limite esgotou!"
 
         # Desenhar o título principal centralizado
         fs_titulo = 56
@@ -55,8 +55,8 @@ class EndScreen:
         rl.draw_text(txt_score, SCREEN_WIDTH // 2 - tw_score // 2, 360, fs_score, rl.YELLOW)
 
         # 3. Instruções de navegação do jogador (Rodapé)
-        inst_jogar = "Pressione [ ENTER ] para Jogar Novamente"
-        inst_menu  = "Pressione [ ESC ] para Voltar ao Menu"
+        inst_jogar = "Pressione [ENTER] para Jogar Novamente"
+        inst_menu  = "Pressione [ESC] para Voltar ao Menu"
         
         rl.draw_text(inst_jogar, SCREEN_WIDTH // 2 - rl.measure_text(inst_jogar, 18) // 2, 500, 18, rl.GRAY)
         rl.draw_text(inst_menu, SCREEN_WIDTH // 2 - rl.measure_text(inst_menu, 18) // 2, 535, 18, rl.GRAY)

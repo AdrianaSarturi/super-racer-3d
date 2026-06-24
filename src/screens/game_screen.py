@@ -21,7 +21,7 @@ _POSICOES_ESTRELAS: list[tuple[float, float]] = [
     ( 8.5, -8.5),   # canto SE — livre
     (-8.5,  8.5),   # canto NO — livre
     ( 8.5,  8.5),   # canto NE — livre (2.1u do cubo 7,7)
-    ( 0.0,  0.0),   # centro   — livre (3.6u do cubo mais próximo)
+    ( 0.0, -5.0),   # centro-S — livre (longe do spawn do jogador em 0,0)
     (-4.0, -0.5),   # interior — livre (2.5u dos obstáculos)
     ( 3.0, -7.5),   # sul      — livre (2.5u do cubo 5,-6)
     (-7.0,  7.0),   # noroeste — livre (4.1u do cubo -8,3)
@@ -45,11 +45,13 @@ class GameScreen:
         - Movimento do jogador (WASD / setas).
         - Renderização do cenário (Scenario) e estrelas (Star).
         - HUD: contador de estrelas + timer regressivo + barra de progresso.
+        - Pausa (ESC): congela o jogo e exibe overlay com opções.
         - Condição de fim: todas as estrelas coletadas OU tempo esgotado com reset.
     """
 
     def __init__(self):
         self.tempo        = 0.0
+        self.pausado      = False
 
         # ── Câmera (mantida intacta conforme código original) ─────────────
         self.camera = rl.Camera3D()
@@ -66,26 +68,41 @@ class GameScreen:
         # ── Cenário e estrelas ────────────────────────────────────────────
         self.cenario = Scenario()
         # Flag de controlo para reinicialização interna do estado
-        self.needs_reset = True                                                
+        self.needs_reset = True
 
     def reset(self):
         """Reinicia o estado interno do jogo sempre que uma nova partida começa."""
         self.player = Player()
         self.timer        = float(TEMPO_LIMITE)
         self.estrelas_coletadas = 0
+        self.pausado      = False
         self.estrelas: list[Star] = [
             Star(x, z, fase=i * 0.47)
-            for i, (x, z) in enumerate(_POSICOES_ESTRELAS)
+            for i, (x, z) in enumerate(_POSICOES_ESTRELAS[:QUANTIDADE_ESTRELAS])
         ]
         self.camera.target = self.player.posicao
         self.needs_reset = False
 
     # ── Update ────────────────────────────────────────────────────────────────
 
-    def update(self, dt: float):                                                      
+    def update(self, dt: float):
         if self.needs_reset:
             self.reset()
 
+        # ── Alternar pausa com ESC ou P ───────────────────────────────────
+        if rl.is_key_pressed(rl.KEY_ESCAPE) or rl.is_key_pressed(rl.KEY_P):
+            self.pausado = not self.pausado
+
+        # ── Quando pausado: só trata saída via Enter ──────────────────────
+        if self.pausado:
+            if rl.is_key_pressed(rl.KEY_ENTER):
+                EndScreen.score = self.estrelas_coletadas
+                EndScreen.victory = self.estrelas_coletadas >= QUANTIDADE_ESTRELAS
+                self.needs_reset = True
+                return GameState.GAME_OVER
+            return None
+
+        # ── Lógica de jogo (congelada durante pausa) ──────────────────────
         self.tempo += dt
         self.timer -= dt
 
@@ -115,7 +132,7 @@ class GameScreen:
 
         # ── Movimento do jogador — WASD / setas (relativo à câmera) ──────
         self.player.update(dt, sin_h, cos_h, self.cenario)
-                                            
+
         # ── Atualizar estrelas ────────────────────────────────────────────
         for estrela in self.estrelas:
             if estrela.update(dt, self.tempo, self.player.posicao):
@@ -126,16 +143,6 @@ class GameScreen:
             EndScreen.score = self.estrelas_coletadas
             EndScreen.victory = self.estrelas_coletadas >= QUANTIDADE_ESTRELAS
             self.needs_reset = True  # Garante reconfiguração na próxima partida
-            return GameState.GAME_OVER
-
-        if rl.is_key_pressed(rl.KEY_ESCAPE):
-            self.needs_reset = True
-            return GameState.START
-
-        if rl.is_key_pressed(rl.KEY_ENTER):
-            EndScreen.score = self.estrelas_coletadas
-            EndScreen.victory = self.estrelas_coletadas >= QUANTIDADE_ESTRELAS
-            self.needs_reset = True
             return GameState.GAME_OVER
 
         return None
@@ -164,6 +171,9 @@ class GameScreen:
 
         self._draw_hud()
 
+        if self.pausado:
+            self._draw_pause_overlay()
+
     # ── HUD ───────────────────────────────────────────────────────────────────
 
     def _draw_hud(self):
@@ -187,6 +197,47 @@ class GameScreen:
         rl.draw_rectangle(24, 80, prog_w, 8, rl.Color(255, 210, 30, 220))
 
         # Dica de controles (rodapé)
-        dica = "WASD / \u2191\u2193\u2190\u2192 mover   |   mouse orbitar   |   ESC voltar"
+        dica = "[WASD] ou [SETAS] para mover   [MOUSE] para orbitar   [ESC] para pausar"
         rl.draw_text(dica, 20, SCREEN_HEIGHT - 30, 16,
+                     rl.Color(140, 145, 185, 200))
+
+    # ── Overlay de Pausa ──────────────────────────────────────────────────────
+
+    def _draw_pause_overlay(self):
+        """Desenha o painel de pausa semitransparente sobre o jogo."""
+        # Fundo escuro semitransparente
+        rl.draw_rectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
+                          rl.Color(0, 0, 0, 160))
+
+        # Painel central
+        pw, ph = 400, 240
+        px = (SCREEN_WIDTH  - pw) // 2
+        py = (SCREEN_HEIGHT - ph) // 2
+        rl.draw_rectangle(px, py, pw, ph, rl.Color(12, 10, 30, 230))
+        rl.draw_rectangle_lines_ex(
+            rl.Rectangle(float(px), float(py), float(pw), float(ph)),
+            2, rl.Color(255, 210, 30, 220)
+        )
+
+        # Título
+        titulo = "PAUSADO"
+        tw = rl.measure_text(titulo, 48)
+        rl.draw_text(titulo, px + (pw - tw) // 2, py + 28, 48,
+                     rl.Color(255, 210, 30, 255))
+
+        # Separador
+        rl.draw_line(px + 24, py + 88, px + pw - 24, py + 88,
+                     rl.Color(255, 210, 30, 100))
+
+        # Opções
+        rl.draw_text("[ESC] ou [P]  para continuar", px + 40, py + 108, 22,
+                     rl.Color(200, 210, 255, 230))
+        rl.draw_text("[Enter]  para encerrar partida", px + 40, py + 148, 22,
+                     rl.Color(200, 210, 255, 230))
+
+        # Estatísticas rápidas
+        secs = max(0, int(self.timer))
+        stats = f"Estrelas: {self.estrelas_coletadas}/{QUANTIDADE_ESTRELAS}   Tempo: {secs:02d}s"
+        sw = rl.measure_text(stats, 18)
+        rl.draw_text(stats, px + (pw - sw) // 2, py + ph - 38, 18,
                      rl.Color(140, 145, 185, 200))

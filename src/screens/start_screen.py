@@ -253,7 +253,7 @@ class StartScreen:
 
     def _draw_dica_controles(self):
         """Dica de controles piscando no rodapé."""
-        dica  = "[ W A S D ] ou [ SETAS ] para mover    [ ESC ] para pausar"
+        dica  = "[WASD] ou [SETAS] para mover    [ESC] para pausar"
         df    = 17
         dw    = rl.measure_text(dica, df)
         da    = int(100 + 80 * abs(math.sin(self.tempo * 0.6)))

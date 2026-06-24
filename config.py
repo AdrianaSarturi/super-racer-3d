@@ -15,6 +15,7 @@ TARGET_FPS    = 60
 class GameState:
     START     = "start"
     PLAYING   = "playing"
+    PAUSED    = "paused"
     GAME_OVER = "game_over"
     EXIT      = "exit"   # sinal para encerrar o jogo de forma limpa
 
@@ -25,6 +26,5 @@ QUANTIDADE_ESTRELAS = 15   # número de estrelas/moedas no cenário
 
 # ── Mundo ─────────────────────────────────────────────────────────────────────
 ARENA_SIZE           = 20    # tamanho da arena em unidades (quadrada, ±10)
-NUM_ESTRELAS         = QUANTIDADE_ESTRELAS  # alias semântico para as estrelas
 STAR_COLLECT_RADIUS  = 0.9   # raio de coleta das estrelas (unidades)
 VELOCIDADE_JOGADOR   = 4.0   # velocidade do cubo/jogador (unidades/segundo)
