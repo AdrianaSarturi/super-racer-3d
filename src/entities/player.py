@@ -19,6 +19,11 @@ class Player:
         # Ângulo atual de rotação do personagem (em graus)
         self.angulo_rotacao = 0.0
 
+        self.tempo_andando = 0.0
+        self.velocidade_passada = 8.0
+        self.amplitude_passada = 35.0
+        self.angulo_passada = 0.0
+
         # Definindo as novas cores solicitadas
         self.cor_corpo = rl.Color(0, 121, 241, 255)    # Azul vibrante
         self.cor_cabeca = rl.Color(245, 200, 160, 255) # Bege / tom de pele
@@ -49,6 +54,16 @@ class Player:
         if mover_x != 0.0 or mover_z != 0.0:
             radianos = math.atan2(mover_x, mover_z)
             self.angulo_rotacao = math.degrees(radianos)
+
+        esta_andando = (mover_x != 0.0 or mover_z != 0.0)
+        if esta_andando:
+            self.tempo_andando += dt
+            self.angulo_passada = (
+                math.sin(self.tempo_andando * self.velocidade_passada)
+                * self.amplitude_passada
+            )
+        else:
+            self.angulo_passada *= max(0.0, 1.0 - dt * 10.0)
 
         # Próxima posição proposta
         proximo_x = self.posicao.x + mover_x
@@ -108,20 +123,23 @@ class Player:
                                 rl.Vector3(0.0, 1.2, 0.0), 
                                 0.05, 0.05, 8, self.cor_corpo)
 
-            # Pernas (Afastadas nas laterais)
-            rl.draw_cylinder_ex(rl.Vector3(0.0, 0.5, 0.0), 
-                                rl.Vector3(-0.18, 0.0, 0.0), 
+            rad_passada = math.radians(self.angulo_passada)
+            desloc_perna = math.sin(rad_passada) * 0.18
+
+            rl.draw_cylinder_ex(rl.Vector3(0.0, 0.5, 0.0),
+                                rl.Vector3(-0.18, 0.0, desloc_perna),
                                 0.035, 0.035, 6, self.cor_corpo)
-            rl.draw_cylinder_ex(rl.Vector3(0.0, 0.5, 0.0), 
-                                rl.Vector3(0.18, 0.0, 0.0), 
+            rl.draw_cylinder_ex(rl.Vector3(0.0, 0.5, 0.0),
+                                rl.Vector3(0.18, 0.0, -desloc_perna),
                                 0.035, 0.035, 6, self.cor_corpo)
 
-            # Braços
-            rl.draw_cylinder_ex(rl.Vector3(0.0, 1.0, 0.0), 
-                                rl.Vector3(-0.22, 0.75, -0.05), 
+            desloc_braco = math.sin(rad_passada) * 0.15
+
+            rl.draw_cylinder_ex(rl.Vector3(0.0, 1.0, 0.0),
+                                rl.Vector3(-0.22, 0.75, -0.05 - desloc_braco),
                                 0.03, 0.03, 6, self.cor_corpo)
-            rl.draw_cylinder_ex(rl.Vector3(0.0, 1.0, 0.0), 
-                                rl.Vector3(0.22, 0.75, -0.05), 
+            rl.draw_cylinder_ex(rl.Vector3(0.0, 1.0, 0.0),
+                                rl.Vector3(0.22, 0.75, -0.05 + desloc_braco),
                                 0.03, 0.03, 6, self.cor_corpo)
 
             # ── CABEÇA (BEGE) ─────────────────────────────────────────────────────

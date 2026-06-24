@@ -5,6 +5,7 @@ import math
 import random
 
 from config import SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE, GameState
+from src.audio_manager import AudioManager
 
 
 # ── Partícula de Estrela ───────────────────────────────────────────────────────
@@ -116,6 +117,10 @@ class StartScreen:
                                 rl.Color(180, 50,  50,  255),
                                 rl.Color(220, 75,  75,  255))
 
+        self.btn_som = _Botao(SCREEN_WIDTH - 150, 20, 130, 44, "SOM: ON",
+                              rl.Color(60, 70, 110, 255),
+                              rl.Color(85, 100, 150, 255))
+
     # ── Update ────────────────────────────────────────────────────────────────
 
     def update(self, dt: float):
@@ -129,6 +134,11 @@ class StartScreen:
 
         if self.btn_sair.update(dt):
             return GameState.EXIT
+
+        if self.btn_som.update(dt):
+            AudioManager.alternar_mute()
+
+        self.btn_som.texto = "SOM: OFF" if AudioManager.esta_mutado() else "SOM: ON"
 
         return None
 
@@ -279,5 +289,6 @@ class StartScreen:
 
         self.btn_jogar.draw()
         self.btn_sair.draw()
+        self.btn_som.draw()
 
         self._draw_dica_controles()

@@ -7,6 +7,7 @@ from config import (
     SCREEN_WIDTH, SCREEN_HEIGHT, GameState,
     ARENA_SIZE, VELOCIDADE_JOGADOR, TEMPO_LIMITE, QUANTIDADE_ESTRELAS,
 )
+from src.audio_manager import AudioManager
 from src.world.palette import HUD_TEXTO, HUD_ALERTA
 from src.world.scenario import Scenario
 from src.world.star import Star
@@ -95,6 +96,8 @@ class GameScreen:
 
         # ── Quando pausado: só trata saída via Enter ──────────────────────
         if self.pausado:
+            if rl.is_key_pressed(rl.KEY_M):
+                AudioManager.alternar_mute()
             if rl.is_key_pressed(rl.KEY_ENTER):
                 EndScreen.score = self.estrelas_coletadas
                 EndScreen.victory = self.estrelas_coletadas >= QUANTIDADE_ESTRELAS
@@ -128,6 +131,11 @@ class GameScreen:
             0.3, self.player.posicao.y + 2.0 + self.distancia * sin_v)
         self.camera.position.z = (self.player.posicao.z
                                    + self.distancia * cos_h * cos_v)
+
+        limite_camera = ARENA_SIZE / 2 - 0.6
+        self.camera.position.x = max(-limite_camera, min(limite_camera, self.camera.position.x))
+        self.camera.position.z = max(-limite_camera, min(limite_camera, self.camera.position.z))
+
         self.camera.target = self.player.posicao
 
         # ── Movimento do jogador — WASD / setas (relativo à câmera) ──────
@@ -137,6 +145,7 @@ class GameScreen:
         for estrela in self.estrelas:
             if estrela.update(dt, self.tempo, self.player.posicao):
                 self.estrelas_coletadas += 1
+                AudioManager.tocar_efeito("moeda")
 
         # ── Condições de fim de jogo (Guardando dados para a EndScreen)───
         if self.estrelas_coletadas >= QUANTIDADE_ESTRELAS or self.timer <= 0:
@@ -210,7 +219,7 @@ class GameScreen:
                           rl.Color(0, 0, 0, 160))
 
         # Painel central
-        pw, ph = 400, 240
+        pw, ph = 400, 280
         px = (SCREEN_WIDTH  - pw) // 2
         py = (SCREEN_HEIGHT - ph) // 2
         rl.draw_rectangle(px, py, pw, ph, rl.Color(12, 10, 30, 230))
@@ -234,6 +243,10 @@ class GameScreen:
                      rl.Color(200, 210, 255, 230))
         rl.draw_text("[Enter]  para encerrar partida", px + 40, py + 148, 22,
                      rl.Color(200, 210, 255, 230))
+
+        status_som = "OFF" if AudioManager.esta_mutado() else "ON"
+        rl.draw_text(f"[M]  para mutar/desmutar som ({status_som})",
+                     px + 40, py + 188, 22, rl.Color(200, 210, 255, 230))
 
         # Estatísticas rápidas
         secs = max(0, int(self.timer))
