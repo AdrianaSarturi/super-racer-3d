@@ -219,7 +219,7 @@ class GameScreen:
                           rl.Color(0, 0, 0, 160))
 
         # Painel central
-        pw, ph = 400, 280
+        pw, ph = 450, 280
         px = (SCREEN_WIDTH  - pw) // 2
         py = (SCREEN_HEIGHT - ph) // 2
         rl.draw_rectangle(px, py, pw, ph, rl.Color(12, 10, 30, 230))
@@ -239,14 +239,14 @@ class GameScreen:
                      rl.Color(255, 210, 30, 100))
 
         # Opções
-        rl.draw_text("[ESC] ou [P]  para continuar", px + 40, py + 108, 22,
+        rl.draw_text("[ESC] ou [P]  para continuar", px + 35, py + 108, 22,
                      rl.Color(200, 210, 255, 230))
-        rl.draw_text("[Enter]  para encerrar partida", px + 40, py + 148, 22,
+        rl.draw_text("[Enter]  para encerrar partida", px + 35, py + 148, 22,
                      rl.Color(200, 210, 255, 230))
 
         status_som = "OFF" if AudioManager.esta_mutado() else "ON"
         rl.draw_text(f"[M]  para mutar/desmutar som ({status_som})",
-                     px + 40, py + 188, 22, rl.Color(200, 210, 255, 230))
+                     px + 35, py + 188, 22, rl.Color(200, 210, 255, 230))
 
         # Estatísticas rápidas
         secs = max(0, int(self.timer))
